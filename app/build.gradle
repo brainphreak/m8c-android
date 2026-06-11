@@ -57,7 +57,7 @@ android {
 
 tasks.register('applySDLPatches') {
     def sdlDir = file('jni/SDL')
-    def patches = fileTree('jni/patches') { include '*.patch' }.files.toList()
+    def patches = fileTree('jni/patches') { include 'sdl-*.patch' }.files.toList()
     doLast {
         patches.each { patch ->
             def check = ['git', 'apply', '--check', patch.absolutePath].execute(null, sdlDir)
@@ -74,9 +74,29 @@ tasks.register('applySDLPatches') {
     }
 }
 
+tasks.register('applyM8cPatches') {
+    def m8cDir = file('jni/m8c')
+    def patches = fileTree('jni/patches') { include 'm8c-*.patch' }.files.toList()
+    doLast {
+        patches.each { patch ->
+            def check = ['git', 'apply', '--check', patch.absolutePath].execute(null, m8cDir)
+            check.waitFor()
+            if (check.exitValue() == 0) {
+                def apply = ['git', 'apply', patch.absolutePath].execute(null, m8cDir)
+                apply.waitFor()
+                if (apply.exitValue() != 0) {
+                    throw new GradleException("Failed to apply patch: ${patch.name}")
+                }
+                logger.lifecycle("Applied m8c patch: ${patch.name}")
+            }
+        }
+    }
+}
+
 tasks.configureEach { task ->
     if (task.name.startsWith('externalNativeBuild') || task.name.startsWith('buildNdkBuild')) {
         task.dependsOn 'applySDLPatches'
+        task.dependsOn 'applyM8cPatches'
     }
 }
 

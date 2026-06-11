@@ -1,0 +1,31 @@
+diff --git a/src/backends/audio_libusb.c b/src/backends/audio_libusb.c
+index e5e24d0..e2aa4a7 100644
+--- a/src/backends/audio_libusb.c
++++ b/src/backends/audio_libusb.c
+@@ -391,17 +391,25 @@ int audio_initialize(const char *output_device_name, unsigned int audio_buffer_s
+   // Start mic → M8 path if OUT interface was found
+   if (audio_out_iface_num >= 0) {
+     mic_buffer = ring_buffer_create(32 * 1024);
++    // Save the output device hint that Java set (e.g. speaker ID) before we
++    // temporarily overwrite it for the capture stream below.
++    const char *current_out_hint = SDL_GetHint("SDL_ANDROID_AUDIO_DEVICE_ID");
++    char *saved_output_hint = (current_out_hint && *current_out_hint) ? SDL_strdup(current_out_hint) : NULL;
+     // Route to selected input device if specified
+     const char *capture_device_id = SDL_GetHint("SDL_ANDROID_AUDIO_CAPTURE_DEVICE_ID");
+     if (capture_device_id != NULL)
+       SDL_SetHint("SDL_ANDROID_AUDIO_DEVICE_ID", capture_device_id);
+     sdl_capture_stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_RECORDING,
+                                                     &audio_spec, &capture_callback, NULL);
+-    // Restore output device hint
++    // Restore output device hint so SDL can reconnect to speaker if audioserver
++    // restarts after a crash (it reads the hint each time it rebuilds the stream).
+     if (output_device_name != NULL)
+       SDL_SetHint("SDL_ANDROID_AUDIO_DEVICE_ID", output_device_name);
++    else if (saved_output_hint)
++      SDL_SetHint("SDL_ANDROID_AUDIO_DEVICE_ID", saved_output_hint);
+     else
+       SDL_SetHint("SDL_ANDROID_AUDIO_DEVICE_ID", "");
++    if (saved_output_hint) SDL_free(saved_output_hint);
+     if (sdl_capture_stream == NULL) {
+       SDL_LogError(SDL_LOG_CATEGORY_SYSTEM, "Failed to open capture stream: %s", SDL_GetError());
+       ring_buffer_free(mic_buffer);
