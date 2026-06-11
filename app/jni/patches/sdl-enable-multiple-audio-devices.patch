@@ -52,3 +52,15 @@ index bc0e7a285..f1b2cf12b 100644
 +#endif
 +
      device->sample_frames = (int)ctx.AAudioStream_getFramesPerDataCallback(hidden->stream);
+diff --git a/src/audio/aaudio/SDL_aaudiofuncs.h b/src/audio/aaudio/SDL_aaudiofuncs.h
+index 2cea7f68e..def456abc 100644
+--- a/src/audio/aaudio/SDL_aaudiofuncs.h
++++ b/src/audio/aaudio/SDL_aaudiofuncs.h
+@@ -34,6 +34,6 @@
+ SDL_PROC_UNUSED(void, AAudioStreamBuilder_setSamplesPerFrame, (AAudioStreamBuilder * builder, int32_t samplesPerFrame))
+ SDL_PROC(void, AAudioStreamBuilder_setFormat, (AAudioStreamBuilder * builder, aaudio_format_t format))
+-SDL_PROC_UNUSED(void, AAudioStreamBuilder_setSharingMode, (AAudioStreamBuilder * builder, aaudio_sharing_mode_t sharingMode))
++SDL_PROC(void, AAudioStreamBuilder_setSharingMode, (AAudioStreamBuilder * builder, aaudio_sharing_mode_t sharingMode))
+ SDL_PROC(void, AAudioStreamBuilder_setDirection, (AAudioStreamBuilder * builder, aaudio_direction_t direction))
+ SDL_PROC(void, AAudioStreamBuilder_setBufferCapacityInFrames, (AAudioStreamBuilder * builder, int32_t numFrames))
+ SDL_PROC(void, AAudioStreamBuilder_setPerformanceMode, (AAudioStreamBuilder * builder, aaudio_performance_mode_t mode))
