@@ -2,7 +2,7 @@ diff --git a/src/audio/aaudio/SDL_aaudio.c b/src/audio/aaudio/SDL_aaudio.c
 index bc0e7a285..f1b2cf12b 100644
 --- a/src/audio/aaudio/SDL_aaudio.c
 +++ b/src/audio/aaudio/SDL_aaudio.c
-@@ -307,6 +307,17 @@ static bool BuildAAudioStream(SDL_AudioDevice *device)
+@@ -307,6 +307,19 @@ static bool BuildAAudioStream(SDL_AudioDevice *device)
      const int aaudio_device_id = (int) ((size_t) device->handle);
      LOGI("Opening device id %d", aaudio_device_id);
      ctx.AAudioStreamBuilder_setDeviceId(builder, aaudio_device_id);
@@ -14,10 +14,41 @@ index bc0e7a285..f1b2cf12b 100644
 +        const char *hint = SDL_GetHint("SDL_ANDROID_AUDIO_DEVICE_ID");
 +        if (hint && *hint) {
 +            const int aaudio_device_id = SDL_atoi(hint);
-+            LOGI("Opening output device id %d (from hint)", aaudio_device_id);
++            LOGI("Opening output device id %d exclusive (from hint)", aaudio_device_id);
 +            ctx.AAudioStreamBuilder_setDeviceId(builder, aaudio_device_id);
++            ctx.AAudioStreamBuilder_setSharingMode(builder, AAUDIO_SHARING_MODE_EXCLUSIVE);
 +        }
 +    }
  #endif
- 
+
      aaudio_format_t format;
+@@ -356,6 +369,21 @@ static bool BuildAAudioStream(SDL_AudioDevice *device)
+     res = ctx.AAudioStreamBuilder_openStream(builder, &hidden->stream);
+     if (res != AAUDIO_OK) {
++#if !ALLOW_MULTIPLE_ANDROID_AUDIO_DEVICES
++        if (res == AAUDIO_ERROR_UNAVAILABLE && !recording) {
++            const char *hint = SDL_GetHint("SDL_ANDROID_AUDIO_DEVICE_ID");
++            if (hint && *hint) {
++                LOGI("Exclusive output failed (%d), retrying shared on device %s", res, hint);
++                ctx.AAudioStreamBuilder_setSharingMode(builder, AAUDIO_SHARING_MODE_SHARED);
++                res = ctx.AAudioStreamBuilder_openStream(builder, &hidden->stream);
++                if (res == AAUDIO_OK) {
++                    ctx.AAudioStreamBuilder_delete(builder);
++                    goto stream_opened;
++                }
++                LOGI("Shared retry also failed (%d)", res);
++            }
++        }
++#endif
+         LOGI("SDL Failed AAudioStreamBuilder_openStream %d", res);
+         ctx.AAudioStreamBuilder_delete(builder);
+         return SDL_SetError("%s : %s", SDL_FUNCTION, ctx.AAudio_convertResultToText(res));
+     }
+@@ -362,3 +396,7 @@ static bool BuildAAudioStream(SDL_AudioDevice *device)
+     ctx.AAudioStreamBuilder_delete(builder);
+
++#if !ALLOW_MULTIPLE_ANDROID_AUDIO_DEVICES
++    stream_opened:;
++#endif
++
+     device->sample_frames = (int)ctx.AAudioStream_getFramesPerDataCallback(hidden->stream);
