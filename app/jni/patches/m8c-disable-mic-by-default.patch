@@ -1,0 +1,13 @@
+diff --git a/src/backends/audio_libusb.c b/src/backends/audio_libusb.c
+index 0000000..0000000 100644
+--- a/src/backends/audio_libusb.c
++++ b/src/backends/audio_libusb.c
+@@ -390,5 +390,7 @@ int audio_initialize(const char *output_device_name, unsigned int audio_buffer_s
+ #ifdef __ANDROID__
+   // Start mic → M8 path if OUT interface was found
+-  if (audio_out_iface_num >= 0) {
++  // Disabled by default: phone mic through speaker creates a feedback loop.
++  if (audio_out_iface_num >= 0 &&
++      SDL_GetHintBoolean("SDL_ANDROID_MIC_TO_M8", false)) {
+     mic_buffer = ring_buffer_create(32 * 1024);
+     // Route to selected input device if specified
